@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { formatDistanceToNow, differenceInSeconds } from 'date-fns';
+import { formatDistanceToNow, differenceInSeconds, formatDuration, intervalToDuration } from 'date-fns';
 import type { TestRun } from '../types';
 
 interface TestCardProps {
@@ -25,6 +25,25 @@ export default function TestCard({ test, onClick }: TestCardProps) {
     const elapsedSeconds = differenceInSeconds(new Date(), new Date(test.startTime));
     if (elapsedSeconds === 0) return 0;
     return Math.round(test.blocksProcessed / elapsedSeconds);
+  };
+
+  const formatSyncSummary = () => {
+    if (!test.endTime) return '';
+    
+    const duration = intervalToDuration({
+      start: new Date(test.startTime),
+      end: new Date(test.endTime)
+    });
+
+    const formatTime = () => {
+      const parts = [];
+      if (duration.days) parts.push(`${duration.days}d`);
+      if (duration.hours) parts.push(`${duration.hours}h`);
+      if (duration.minutes) parts.push(`${duration.minutes}m`);
+      return parts.join(' ');
+    };
+
+    return `Synced ${test.totalBlocks.toLocaleString()} blocks within ${formatTime()}`;
   };
 
   return (
@@ -61,6 +80,12 @@ export default function TestCard({ test, onClick }: TestCardProps) {
             <span>{test.blocksProcessed.toLocaleString()} / {test.totalBlocks.toLocaleString()} blocks</span>
             <span>{calculateSyncSpeed()} blocks/sec</span>
           </div>
+        </div>
+      )}
+
+      {(test.status === 'Passed' || test.status === 'Failed') && (
+        <div className="mt-2 text-sm text-gray-600">
+          {formatSyncSummary()}
         </div>
       )}
     </div>
