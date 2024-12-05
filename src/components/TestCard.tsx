@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, differenceInSeconds } from 'date-fns';
 import type { TestRun } from '../types';
 
 interface TestCardProps {
@@ -21,6 +21,12 @@ const statusColors = {
 };
 
 export default function TestCard({ test, onClick }: TestCardProps) {
+  const calculateSyncSpeed = () => {
+    const elapsedSeconds = differenceInSeconds(new Date(), new Date(test.startTime));
+    if (elapsedSeconds === 0) return 0;
+    return Math.round(test.blocksProcessed / elapsedSeconds);
+  };
+
   return (
     <div 
       onClick={onClick}
@@ -51,8 +57,9 @@ export default function TestCard({ test, onClick }: TestCardProps) {
               style={{ width: `${(test.blocksProcessed / test.totalBlocks) * 100}%` }}
             />
           </div>
-          <div className="mt-1 text-sm text-gray-500">
-            {test.blocksProcessed.toLocaleString()} / {test.totalBlocks.toLocaleString()} blocks
+          <div className="mt-1 flex justify-between items-center text-sm text-gray-500">
+            <span>{test.blocksProcessed.toLocaleString()} / {test.totalBlocks.toLocaleString()} blocks</span>
+            <span>{calculateSyncSpeed()} blocks/sec</span>
           </div>
         </div>
       )}
