@@ -124,6 +124,24 @@ app.post('/update', async (req, res) => {
   
   try {
     if (update.type === 'newTest' || update.type === 'updateTest') {
+      // Check if this is a status change to completed
+      const existingTest = await appPool.query('SELECT data FROM test_runs WHERE id = $1', [update.data.id]);
+      
+      if (existingTest.rows.length > 0) {
+        const oldStatus = existingTest.rows[0].data.status;
+        // If test is transitioning from In Progress to completed state
+        if (oldStatus === 'In Progress' && 
+            (update.data.status === 'Passed' || update.data.status === 'Failed')) {
+          update.data.endTime = new Date().toISOString();
+        } else {
+          // Keep existing endTime if present
+          update.data.endTime = existingTest.rows[0].data.endTime;
+        }
+      } else if (update.data.status === 'Passed' || update.data.status === 'Failed') {
+        // New test that's already completed
+        update.data.endTime = new Date().toISOString();
+      }
+      
       await appPool.query(
         'INSERT INTO test_runs (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2',
         [update.data.id, update.data]
